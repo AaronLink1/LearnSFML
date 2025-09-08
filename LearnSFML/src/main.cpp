@@ -3,48 +3,58 @@
 #include <numbers>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
-//Currently basing the location of the circle off of the rectangle. Technically the rectangle should be based off the location of the circle.
+// Setup an array of vertexes
+// Draw vectors between vertexes
 
 constexpr double RAD_TO_DEG (180.0 / std::numbers::pi);
+struct VertexVector { bool move; int index; };
+
+constexpr int numVertex = 2;
+constexpr int numVectors = numVertex - 1;
 
 int main()
 {
 	sf::RenderWindow window(sf::VideoMode({ 1980, 1080 }), "SFML Learning Vectors");
 	window.setVerticalSyncEnabled(true);
 
-	bool moveVertex = false;
+	VertexVector moveVertex{ false, 0 };
 
-	sf::CircleShape vertex(5.0f);
-	vertex.setOrigin(vertex.getGeometricCenter());
-	vertex.setPosition({ 1300.0f, 300.0f });
-	vertex.setFillColor(sf::Color::Green);
-	vertex.setOutlineThickness(1.0f);
-	vertex.setOutlineColor(sf::Color::Black);
+	std::vector<sf::CircleShape> vertexes;
+	for (int i = 0; i < numVertex; i++)
+	{
+		sf::CircleShape vertex(5.0f);
+		vertex.setOrigin(vertex.getGeometricCenter());
+		vertex.setPosition({ i * 200.0f, i * 200.0f });
+		vertex.setFillColor(sf::Color::Green);
+		vertex.setOutlineThickness(1.0f);
+		vertex.setOutlineColor(sf::Color::Black);
+		vertexes.push_back(vertex);
+	}
 
-	sf::Vector2f initDirection = { vertex.getPosition().x - window.getSize().x / 2.0f, vertex.getPosition().y - window.getSize().y / 2.0f };
-	sf::RectangleShape vector({std::hypotf(initDirection.x, initDirection.y), 5.0f});
-	vector.setRotation(sf::degrees(std::atan2(initDirection.y, initDirection.x) * RAD_TO_DEG));
-	vector.setOrigin({ 0.0f, vector.getSize().y / 2.0f });
-	vector.setPosition({ window.getSize().x / 2.0f, window.getSize().y / 2.0f });
-	vector.setFillColor(sf::Color::Red);
-	vector.setOutlineThickness(1.0f);
-	vector.setOutlineColor(sf::Color::Black);
-
+	std::vector<sf::RectangleShape> vectors;
+	for (int i = 0; i < numVectors; i++)
+	{
+		sf::Vector2f initDirection = vertexes[i + 1].getPosition() - vertexes[i].getPosition();
+		sf::RectangleShape vector({ std::hypotf(initDirection.x, initDirection.y), 5.0f });
+		vector.setRotation(sf::degrees(std::atan2(initDirection.y, initDirection.x) * RAD_TO_DEG));
+		vector.setOrigin({ 0.0f, vector.getSize().y / 2.0f });
+		vector.setPosition(vertexes[i].getPosition());
+		vector.setFillColor(sf::Color::Red);
+		vector.setOutlineThickness(1.0f);
+		vector.setOutlineColor(sf::Color::Black);
+		vectors.push_back(vector);
+	}
+	
 	sf::Font font;
 	if (!font.openFromFile("../resources/fonts/prototype/prototype.ttf"))
 	{
 		std::cerr << "Error: Could not load file {../resources/fonts/prototype/prototype.ttf}" << std::endl;
 	}
 
-	std::stringstream sStream;
-	sStream << "Vector 1: (" << std::cos(vector.getRotation().asRadians()) * vector.getSize().x << ", " 
-			<< std::sin(vector.getRotation().asRadians()) * vector.getSize().x << ")";
-
-	
-
 	sf::Text vectorOne(font);
-	vectorOne.setString(sStream.str());
+	//vectorOne.setString(sStream.str());
 	vectorOne.setOrigin(vectorOne.getGlobalBounds().size / 2.0f);
 	vectorOne.setPosition({ window.getSize().x * 0.25f, 50.0f});
 	vectorOne.setFillColor(sf::Color::Red);
@@ -52,7 +62,7 @@ int main()
 	vectorOne.setOutlineColor(sf::Color::Black);
 
 	sf::Text vectorTwo(font);
-	vectorTwo.setString(sStream.str());
+	//vectorTwo.setString(sStream.str());
 	vectorTwo.setOrigin(vectorTwo.getGlobalBounds().size / 2.0f);
 	vectorTwo.setPosition({ window.getSize().x * 0.5f, 50.0f });
 	vectorTwo.setFillColor(sf::Color::Red);
@@ -60,12 +70,22 @@ int main()
 	vectorTwo.setOutlineColor(sf::Color::Black);
 
 	sf::Text vectorThree(font);
-	vectorThree.setString(sStream.str());
+	//vectorThree.setString(sStream.str());
 	vectorThree.setOrigin(vectorThree.getGlobalBounds().size / 2.0f);
 	vectorThree.setPosition({ window.getSize().x * 0.75f, 50.0f });
 	vectorThree.setFillColor(sf::Color::Red);
 	vectorThree.setOutlineThickness(1.0f);
 	vectorThree.setOutlineColor(sf::Color::Black);
+
+	std::stringstream sStream;
+	for (int i = 0; i < numVectors; i++)
+	{
+		sStream.str("");
+		sStream.clear();
+		sf::Vector2f direction = vertexes[i + 1].getPosition() - vertexes[i].getPosition();
+		sStream << "Vector " << i << ": (" << direction.x << ", " << direction.y << ")";
+		vectorOne.setString(sStream.str());
+	}
 
 	while (window.isOpen())
 	{
@@ -82,38 +102,61 @@ int main()
 				}
 			else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>())
 			{
-				if (vertex.getGlobalBounds().contains(sf::Vector2f{ sf::Mouse::getPosition(window) }))
-					moveVertex = true;
+				for (int i = 0; i < numVertex; i++)
+					if (vertexes[i].getGlobalBounds().contains(sf::Vector2f{sf::Mouse::getPosition(window)}))
+					{
+						moveVertex.move = true;
+						moveVertex.index = i;
+					}
 			}
 			else if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>())
 			{
-				moveVertex = false;
+				moveVertex.move = false;
 			}
 		}
 
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
 		{
-			if (moveVertex)
+			if (moveVertex.move)
 			{
-				vertex.setPosition(sf::Vector2f{ sf::Mouse::getPosition(window) });
+				vertexes[moveVertex.index].setPosition(sf::Vector2f{sf::Mouse::getPosition(window)});
 
-				sf::Vector2f direction = { vertex.getPosition().x - window.getSize().x / 2.0f, vertex.getPosition().y - window.getSize().y / 2.0f };
-				vector.setSize({ std::hypotf(direction.x, direction.y), 5.0f });
-				vector.setRotation(sf::degrees(std::atan2(direction.y, direction.x) * RAD_TO_DEG));
+				if (moveVertex.index == numVertex - 1)
+				{
+					sf::Vector2f direction = vertexes[moveVertex.index].getPosition() - vertexes[moveVertex.index - 1].getPosition();
+					vectors[moveVertex.index - 1].setSize({ std::hypotf(direction.x, direction.y), 5.0f });
+					vectors[moveVertex.index - 1].setRotation(sf::degrees(std::atan2(direction.y, direction.x) * RAD_TO_DEG));
+				}
+				else if (moveVertex.index > 0)
+				{
+					/*sf::Vector2f direction = vertexes[moveVertex.index].getPosition() - vertexes[moveVertex.index - 1].getPosition();
+					vectors[moveVertex.index - 1].setSize({ direction.x , 5.0f });
+					vectors[moveVertex.index - 1].setRotation(sf::degrees(std::atan2(direction.y, direction.x)* RAD_TO_DEG));*/
+				}
+				else
+				{
+					sf::Vector2f direction = vertexes[moveVertex.index + 1].getPosition() - vertexes[moveVertex.index].getPosition();
+					vectors[moveVertex.index].setPosition(vertexes[moveVertex.index].getPosition());
+					vectors[moveVertex.index].setSize({ std::hypotf(direction.x, direction.y) , 5.0f });
+					vectors[moveVertex.index].setRotation(sf::degrees(std::atan2(direction.y, direction.x) * RAD_TO_DEG));
+				}
 
-				sStream.str("");
-				sStream.clear();
-				sStream << "Vector 1: (" << std::cos(vector.getRotation().asRadians()) * vector.getSize().x << ", "
-					<< std::sin(vector.getRotation().asRadians()) * vector.getSize().x << ")";
-				vectorOne.setString(sStream.str());
-				vectorTwo.setString(sStream.str());
-				vectorThree.setString(sStream.str());
+				for (int i = 0; i < numVectors; i++)
+				{
+					sStream.str("");
+					sStream.clear();
+					sf::Vector2f direction = vertexes[i + 1].getPosition() - vertexes[i].getPosition();
+					sStream << "Vector " << i << ": (" << direction.x << ", " << direction.y << ")";
+					vectorOne.setString(sStream.str());
+				}
 			}
 		}
 
 		window.clear(sf::Color::White);
-		window.draw(vector);
-		window.draw(vertex);
+		for (sf::RectangleShape vector : vectors)
+			window.draw(vector);
+		for (sf::CircleShape vertex : vertexes)
+			window.draw(vertex);
 		window.draw(vectorOne);
 		window.draw(vectorTwo);
 		window.draw(vectorThree);
