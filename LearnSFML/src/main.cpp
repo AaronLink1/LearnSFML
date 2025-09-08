@@ -11,12 +11,25 @@ int main()
 	sf::RenderWindow window(sf::VideoMode({ 1980, 1080 }), "SFML Learning Vectors");
 	window.setVerticalSyncEnabled(true);
 
-	sf::RectangleShape rect({0.0f, 5.0f});
+	bool moveVecOne = false;
+
+	sf::RectangleShape rect({300.0f, 5.0f});
+	rect.setRotation(sf::degrees(-60.0f));
 	rect.setOrigin({ 0.0f, rect.getSize().y / 2.0f });
 	rect.setPosition({ window.getSize().x / 2.0f, window.getSize().y / 2.0f });
 	rect.setFillColor(sf::Color::Red);
 	rect.setOutlineThickness(1.0f);
 	rect.setOutlineColor(sf::Color::Black);
+
+	sf::CircleShape circle(5.0f);
+	circle.setOrigin(circle.getGeometricCenter());
+	circle.setPosition(sf::Vector2f{ std::cos(rect.getRotation().asRadians()) * rect.getSize().x, std::sin(rect.getRotation().asRadians()) * rect.getSize().x } 
+										+ rect.getPosition());
+	std::cout << circle.getPosition().x << ", " << circle.getPosition().y << std::endl;
+	//circle.setPosition({ 10.0f, 10.0f });
+	circle.setFillColor(sf::Color::Green);
+	circle.setOutlineThickness(1.0f);
+	circle.setOutlineColor(sf::Color::Black);
 
 	sf::Font font;
 	if (!font.openFromFile("../resources/fonts/prototype/prototype.ttf"))
@@ -25,7 +38,10 @@ int main()
 	}
 
 	std::stringstream sStream;
-	sStream << "Vector 1: (" << rect.getSize().x << ", " << rect.getSize().y << ")";
+	sStream << "Vector 1: (" << std::cos(rect.getRotation().asRadians()) * rect.getSize().x << ", " 
+			<< std::sin(rect.getRotation().asRadians()) * rect.getSize().x << ")";
+
+	
 
 	sf::Text vectorOne(font);
 	vectorOne.setString(sStream.str());
@@ -64,31 +80,39 @@ int main()
 					window.close();
 					break;
 				}
-			//else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>())
-			//{
-			//	mouseClick = sf::Vector2f{ mousePressed->position };
-			//	//std::cout << "(" << mouseClick.x << ", " << mouseClick.y << ")" << std::endl;
-			//	rect.setSize(mouseClick);
-			//}
+			else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>())
+			{
+				if (circle.getGlobalBounds().contains(sf::Vector2f{ sf::Mouse::getPosition(window) }))
+					moveVecOne = true;
+			}
+			else if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>())
+			{
+				moveVecOne = false;
+			}
 		}
 
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
 		{
-			sf::Vector2f mousePosition = sf::Vector2f{ sf::Mouse::getPosition(window) };
-			sf::Vector2f direction = mousePosition - rect.getPosition();
-			rect.setSize({ std::hypotf(direction.x, direction.y), rect.getSize().y });
-			rect.setRotation(sf::degrees(std::atan2(direction.y, direction.x) * RAD_TO_DEG));
+			if (moveVecOne)
+			{
+				sf::Vector2f mousePosition = sf::Vector2f{ sf::Mouse::getPosition(window) };
+				sf::Vector2f direction = mousePosition - rect.getPosition();
+				rect.setSize({ std::hypotf(direction.x, direction.y), rect.getSize().y });
+				rect.setRotation(sf::degrees(std::atan2(direction.y, direction.x) * RAD_TO_DEG));
+				circle.setPosition(direction + rect.getPosition());
 
-			sStream.str("");
-			sStream.clear();
-			sStream << "Vector 1: (" << direction.x << ", " << direction.y << ")";
-			vectorOne.setString(sStream.str());
-			vectorTwo.setString(sStream.str());
-			vectorThree.setString(sStream.str());
+				sStream.str("");
+				sStream.clear();
+				sStream << "Vector 1: (" << direction.x << ", " << direction.y << ")";
+				vectorOne.setString(sStream.str());
+				vectorTwo.setString(sStream.str());
+				vectorThree.setString(sStream.str());
+			}
 		}
 
-		window.clear(sf::Color::Cyan);
+		window.clear(sf::Color::White);
 		window.draw(rect);
+		window.draw(circle);
 		window.draw(vectorOne);
 		window.draw(vectorTwo);
 		window.draw(vectorThree);
