@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+//Currently basing the location of the circle off of the rectangle. Technically the rectangle should be based off the location of the circle.
+
 constexpr double RAD_TO_DEG (180.0 / std::numbers::pi);
 
 int main()
@@ -11,25 +13,23 @@ int main()
 	sf::RenderWindow window(sf::VideoMode({ 1980, 1080 }), "SFML Learning Vectors");
 	window.setVerticalSyncEnabled(true);
 
-	bool moveVecOne = false;
+	bool moveVertex = false;
 
-	sf::RectangleShape rect({300.0f, 5.0f});
-	rect.setRotation(sf::degrees(-60.0f));
-	rect.setOrigin({ 0.0f, rect.getSize().y / 2.0f });
-	rect.setPosition({ window.getSize().x / 2.0f, window.getSize().y / 2.0f });
-	rect.setFillColor(sf::Color::Red);
-	rect.setOutlineThickness(1.0f);
-	rect.setOutlineColor(sf::Color::Black);
+	sf::CircleShape vertex(5.0f);
+	vertex.setOrigin(vertex.getGeometricCenter());
+	vertex.setPosition({ 1300.0f, 300.0f });
+	vertex.setFillColor(sf::Color::Green);
+	vertex.setOutlineThickness(1.0f);
+	vertex.setOutlineColor(sf::Color::Black);
 
-	sf::CircleShape circle(5.0f);
-	circle.setOrigin(circle.getGeometricCenter());
-	circle.setPosition(sf::Vector2f{ std::cos(rect.getRotation().asRadians()) * rect.getSize().x, std::sin(rect.getRotation().asRadians()) * rect.getSize().x } 
-										+ rect.getPosition());
-	std::cout << circle.getPosition().x << ", " << circle.getPosition().y << std::endl;
-	//circle.setPosition({ 10.0f, 10.0f });
-	circle.setFillColor(sf::Color::Green);
-	circle.setOutlineThickness(1.0f);
-	circle.setOutlineColor(sf::Color::Black);
+	sf::Vector2f initDirection = { vertex.getPosition().x - window.getSize().x / 2.0f, vertex.getPosition().y - window.getSize().y / 2.0f };
+	sf::RectangleShape vector({std::hypotf(initDirection.x, initDirection.y), 5.0f});
+	vector.setRotation(sf::degrees(std::atan2(initDirection.y, initDirection.x) * RAD_TO_DEG));
+	vector.setOrigin({ 0.0f, vector.getSize().y / 2.0f });
+	vector.setPosition({ window.getSize().x / 2.0f, window.getSize().y / 2.0f });
+	vector.setFillColor(sf::Color::Red);
+	vector.setOutlineThickness(1.0f);
+	vector.setOutlineColor(sf::Color::Black);
 
 	sf::Font font;
 	if (!font.openFromFile("../resources/fonts/prototype/prototype.ttf"))
@@ -38,8 +38,8 @@ int main()
 	}
 
 	std::stringstream sStream;
-	sStream << "Vector 1: (" << std::cos(rect.getRotation().asRadians()) * rect.getSize().x << ", " 
-			<< std::sin(rect.getRotation().asRadians()) * rect.getSize().x << ")";
+	sStream << "Vector 1: (" << std::cos(vector.getRotation().asRadians()) * vector.getSize().x << ", " 
+			<< std::sin(vector.getRotation().asRadians()) * vector.getSize().x << ")";
 
 	
 
@@ -82,28 +82,29 @@ int main()
 				}
 			else if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>())
 			{
-				if (circle.getGlobalBounds().contains(sf::Vector2f{ sf::Mouse::getPosition(window) }))
-					moveVecOne = true;
+				if (vertex.getGlobalBounds().contains(sf::Vector2f{ sf::Mouse::getPosition(window) }))
+					moveVertex = true;
 			}
 			else if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>())
 			{
-				moveVecOne = false;
+				moveVertex = false;
 			}
 		}
 
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
 		{
-			if (moveVecOne)
+			if (moveVertex)
 			{
-				sf::Vector2f mousePosition = sf::Vector2f{ sf::Mouse::getPosition(window) };
-				sf::Vector2f direction = mousePosition - rect.getPosition();
-				rect.setSize({ std::hypotf(direction.x, direction.y), rect.getSize().y });
-				rect.setRotation(sf::degrees(std::atan2(direction.y, direction.x) * RAD_TO_DEG));
-				circle.setPosition(direction + rect.getPosition());
+				vertex.setPosition(sf::Vector2f{ sf::Mouse::getPosition(window) });
+
+				sf::Vector2f direction = { vertex.getPosition().x - window.getSize().x / 2.0f, vertex.getPosition().y - window.getSize().y / 2.0f };
+				vector.setSize({ std::hypotf(direction.x, direction.y), 5.0f });
+				vector.setRotation(sf::degrees(std::atan2(direction.y, direction.x) * RAD_TO_DEG));
 
 				sStream.str("");
 				sStream.clear();
-				sStream << "Vector 1: (" << direction.x << ", " << direction.y << ")";
+				sStream << "Vector 1: (" << std::cos(vector.getRotation().asRadians()) * vector.getSize().x << ", "
+					<< std::sin(vector.getRotation().asRadians()) * vector.getSize().x << ")";
 				vectorOne.setString(sStream.str());
 				vectorTwo.setString(sStream.str());
 				vectorThree.setString(sStream.str());
@@ -111,8 +112,8 @@ int main()
 		}
 
 		window.clear(sf::Color::White);
-		window.draw(rect);
-		window.draw(circle);
+		window.draw(vector);
+		window.draw(vertex);
 		window.draw(vectorOne);
 		window.draw(vectorTwo);
 		window.draw(vectorThree);
