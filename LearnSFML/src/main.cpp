@@ -8,7 +8,7 @@
 constexpr double RAD_TO_DEG (180.0 / std::numbers::pi);
 struct VertexVector { bool move; int index; };
 
-constexpr int numVertex = 4;
+constexpr int numVertex = 5;
 constexpr int numVectors = numVertex;
 
 int main()
